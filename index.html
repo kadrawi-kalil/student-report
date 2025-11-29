@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>نظام متابعة التحصيل الأكاديمي</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+        /*  font-family: 'Tajawal', sans-serif; */
+      }
+
+      body {
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+        color: #333;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      header {
+        background-color: #2c3e50;
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: 28px;
+      }
+
+      .content {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+
+      .form-section {
+        flex: 1;
+        min-width: 400px;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .preview-section {
+        flex: 1;
+        min-width: 400px;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+      }
+
+      h2 {
+        color: #2c3e50;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 10px;
+        margin-top: 0;
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+
+      input,
+      select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 16px;
+      }
+
+      .subject-row {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+        align-items: flex-start;
+        padding: 10px;
+        border: 1px solid #eee;
+        border-radius: 4px;
+      }
+
+      .subject-name {
+        flex: 2;
+      }
+
+      .subject-score {
+        flex: 1;
+        min-width: 70px;
+      }
+
+      .subject-notes {
+        flex: 3;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .note-option {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 12px;
+      }
+
+      .note-option input {
+        width: auto;
+      }
+
+      button {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        transition: background-color 0.3s;
+        margin-top: 10px;
+      }
+
+      button:hover {
+        background-color: #2980b9;
+      }
+
+      #pdfPreview {
+        flex: 1;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 20px;
+        background-color: white;
+        overflow: auto;
+        min-height: 500px;
+      }
+
+      .actions {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .actions button {
+        flex: 1;
+        max-width: 200px;
+      }
+
+      #generatePdf {
+        background-color: #27ae60;
+      }
+
+      #generatePdf:hover {
+        background-color: #219653;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+      }
+
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: center;
+      }
+
+      th {
+        background-color: #f2f2f2;
+      }
+
+      .school-header {
+        text-align: center;
+        font-weight: bold;
+        font-size: 20px;
+        margin-bottom: 20px;
+      }
+
+      .student-info {
+        margin-bottom: 20px;
+      }
+
+      .footer {
+        text-align: center;
+        margin-top: 20px;
+        color: #777;
+        font-size: 14px;
+      }
+
+      .remove-subject {
+        background-color: #e74c3c;
+        padding: 5px 10px;
+        font-size: 14px;
+      }
+
+      .remove-subject:hover {
+        background-color: #c0392b;
+      }
+
+      /* Modal Styles */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.5);
+      }
+
+      .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        width: 90%;
+        max-width: 1000px;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+
+      .close {
+        color: #aaa;
+        float: left;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      .close:hover {
+        color: black;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+      }
+
+      .modal-title {
+        margin: 0;
+        color: #2c3e50;
+      }
+
+      .axis-section {
+        margin-bottom: 25px;
+        padding: 15px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+      }
+
+      .axis-title {
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 10px;
+        font-size: 16px;
+      }
+
+      .axis-description {
+        font-size: 14px;
+        color: #555;
+        margin-bottom: 15px;
+        font-style: italic;
+      }
+
+      .axis-select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        background-color: white;
+      }
+
+      .notes-preview {
+        background-color: #f9f9f9;
+        padding: 10px;
+        border-radius: 4px;
+        margin-top: 5px;
+        font-size: 12px;
+        max-height: 100px;
+        overflow-y: auto;
+      }
+
+      .notes-preview ul {
+        margin: 0;
+        padding-right: 15px;
+      }
+
+      .open-notes-btn {
+        background-color: #3498db;
+        padding: 8px 12px;
+        font-size: 14px;
+        margin-top: 5px;
+      }
+
+      .manage-notes-btn {
+        background-color: #9b59b6;
+        margin-bottom: 15px;
+      }
+
+      .manage-notes-btn:hover {
+        background-color: #8e44ad;
+      }
+
+      .modal-actions {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      @media (max-width: 768px) {
+        .content {
+          flex-direction: column;
+        }
+
+        .subject-row {
+          flex-direction: column;
+        }
+
+        .modal-content {
+          width: 95%;
+          margin: 10% auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>نظام متابعة التحصيل الأكاديمي</h1>
+        <p>مدارس النصر الأهلية - سجل متابعة التحصيل الأكاديمي</p>
+      </header>
+
+      <div class="content">
+        <div class="form-section">
+          <h2>إدخال بيانات الطالب</h2>
+
+          <div class="form-group">
+            <label for="studentName">اسم الطالب:</label>
+            <input type="text" id="studentName" placeholder="أدخل اسم الطالب" />
+          </div>
+
+          <div class="form-group">
+            <label for="studentClass">الصف:</label>
+            <input type="text" id="studentClass" placeholder="أدخل الصف" />
+          </div>
+
+          <div class="form-group">
+            <label for="period">الفترة:</label>
+            <input
+              type="text"
+              id="period"
+              placeholder="مثال: 1444/01/21 - 1444/..."
+            />
+          </div>
+
+          <h2>الدرجات الأكاديمية</h2>
+
+          <button id="manageNotes" class="manage-notes-btn">
+            إدارة خيارات الملاحظات
+          </button>
+
+          <div id="subjectsContainer">
+            <!-- Subjects will be added here dynamically -->
+          </div>
+
+          <button id="addSubject">إضافة مادة</button>
+
+          <h2>المتابعة الإدارية</h2>
+
+          <div class="form-group">
+            <label for="counselorNotes">ملاحظات الموجه الطلابي:</label>
+            <input
+              type="text"
+              id="counselorNotes"
+              placeholder="أدخل ملاحظات الموجه الطلابي"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="adminNotes">ملاحظات الإدارة:</label>
+            <input
+              type="text"
+              id="adminNotes"
+              placeholder="أدخل ملاحظات الإدارة"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="absenceDays">عدد أيام الغياب:</label>
+            <input type="number" id="absenceDays" min="0" />
+          </div>
+
+          <div class="form-group">
+            <label for="lateDays">عدد أيام التأخر:</label>
+            <input type="number" id="lateDays" min="0" />
+          </div>
+        </div>
+
+        <div class="preview-section">
+          <h2>معاينة التقرير</h2>
+          <div id="pdfPreview">
+            <!-- PDF preview will be displayed here -->
+          </div>
+
+          <div class="actions">
+            <button id="updatePreview">تحديث المعاينة</button>
+            <button id="generatePdf">تحميل PDF</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p>مدارس النصر الأهلية - نظام متابعة التحصيل الأكاديمي © 2025</p>
+      </div>
+    </div>
+
+    <!-- Modal for managing notes -->
+    <div id="notesModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">إدارة خيارات الملاحظات</h3>
+          <span class="close">&times;</span>
+        </div>
+
+        <div id="axesContainer">
+          <!-- Axes will be added here dynamically -->
+        </div>
+
+        <div class="modal-actions">
+          <button id="saveNotes">حفظ</button>
+          <button id="cancelNotes">إلغاء</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Note options for teachers - initial values
+      let noteOptions = [
+        {
+          id: "excellent",
+          text: "متميز: الأداء العام يتجاوز التوقعات بشكل لافت",
+        },
+        {
+          id: "meeting",
+          text: "مطابق للتوقعات: الأداء العام مقبول ومتوافق مع معايير المدرسة",
+        },
+        {
+          id: "needs_followup",
+          text: "بحاجة إلى متابعة: هناك بعض الجوانب التي تحتاج إلى تحسين وتدخل",
+        },
+        {
+          id: "needs_plan",
+          text: "بحاجة إلى خطة تحسين فردية: الأداء العام يتطلب تدخلاً مكثفاً ووضع خطة علاجية",
+        },
+      ];
+
+      // Define the 7 axes with their options
+      const axesData = [
+        {
+          id: "homework",
+          title: "المحور الأول: الواجبات والمهام المنزلية",
+          description:
+            "يُقيّم هذا المحور التزام الطالب بإنجاز الواجبات المنزلية وجودتها في الوقت المحدد",
+          options: [
+            "يُسلم جميع الواجبات في موعدها المحدد ودون تأخير",
+            "يُسلم معظم الواجبات في موعدها، مع تأخير بسيط في بعضها",
+            "يُسلم الواجبات بشكل متأخر في كثير من الأحيان",
+            "يُسلم الواجبات بشكل غير منتظم وغير مكتمل",
+            "يُظهر إهمالاً تاماً في تسليم الواجبات المنزلية",
+            "يبذل جهداً استثنائياً في إنجاز الواجبات، ويتجاوز المتطلبات الأساسية",
+            "يظهر جهداً مقبولاً في إنجاز الواجبات، لكنه يقتصر على الحد الأدنى المطلوب",
+            "يظهر تهاوناً واضحاً في جودة إنجاز الواجبات (كتابة غير واضحة، إجابات ناقصة",
+            "يعتمد على الآخرين في نسخ الواجبات بدلاً من فهمها وإنجازها بنفسه",
+            "يحرص على تنظيم ودقة الحلول، ويدقق في إجاباته قبل التسليم",
+          ],
+        },
+        {
+          id: "participation",
+          title: "المحور الثاني: المشاركة والتفاعل داخل الصف",
+          description:
+            "يُقيّم هذا المحور مدى مشاركة الطالب الإيجابية وفاعليته أثناء الحصة الدراسية",
+          options: [
+            "يُظهر قدوة حسنة في السلوك والالتزام بالأنظمة داخل الصف وخارجه",
+            "سلوكه مقبول بشكل عام، ونادراً ما يحتاج إلى توجيه أو إنذار",
+            "يحتاج إلى تذكير متكرر بالانضباط واتباع قواعد الفصل",
+            "يتسبب في تشتيت انتباه الآخرين بسبب سلوكه غير المنضبط",
+            "يُظهر سلوكاً عدوانياً أو غير لائق تجاه زملائه أو المعلم",
+            "يحترم آراء ومشاعر الآخرين ويتعامل بأدب ولباقة",
+            "يتحمل مسؤولية أفعاله ويعترف بأخطائه",
+            "يلتزم بالزي المدرسي والمظهر اللائق بشكل دائم",
+            "يحافظ على نظافة الفصل ومرافقه",
+            "دائم الحضور والانصراف في الوقت المحدد",
+          ],
+        },
+        {
+          id: "behavior",
+          title: "المحور الثالث: السلوك والانضباط",
+          description:
+            "يُقيّم هذا المحور التزام الطالب بأنظمة الفصل والمدرسة وأخلاقيات التعامل مع الآخرين",
+          options: [
+            "دائم المشاركة الفعالة والبناءة في المناقشات الصفية",
+            "يشارك بشكل منتظم، وأفكاره واضحة ومترابطة",
+            "يشارك أحياناً، ولكن يحتاج إلى تشجيع مستمر من المعلم",
+            "نادراً ما يشارك، ويبدو غير مبالٍ بالمناقشات الصفية",
+            "يتجنب المشاركة تماماً حتى عندما يُسأل مباشرة",
+            "يستمع بانتباه لزملائه ويبني على مشاركاتهم",
+            "يطرح أسئلة ذكية تعمق فهم الجميع للموضوع",
+            "يعمل بشكل تعاوني وفعال ضمن المجموعة",
+            "يبدو مشتت الانتباه أو منغلقاً على نفسه أثناء الحصة",
+            "يُظهر حب الاستطلاع والرغبة في التعلم من خلال تفاعله",
+          ],
+        },
+        {
+          id: "strengths",
+          title: "المحور الرابع: نقاط القوة لدى الطالب",
+          description:
+            "يُسلط هذا المحور الضوء على المهارات والصفات الإيجابية المتميزة لدى الطالب",
+          options: [
+            "يتمتع بذاكرة قوية وقدرة على استرجاع المعلومات بدقة",
+            "يمتلك مهارات تحليلية ممتازة وقدرة على ربط المفاهيم",
+            "مبدع ويملك أفكاراً فريدة وخيالاً خصباً",
+            "قائد طبيعي ويتمتع بمهارات تنظيمية عالية",
+            "دقيق في ملاحظاته ويهتم بالتفاصيل الدقيقة",
+            "يمتلك حصيلة لغوية غنية ومهارات تواصل ممتازة",
+            "سريع الفهم ويستوعب المفاهيم الجديدة بسهولة",
+            "مثابر ولا يستسلم بسهولة عند مواجهة التحديات",
+            "متعاون ومساعد لزملائه ويتعاطف معهم",
+            "منظم ويحافظ على أدواته وملاحظاته مرتبة",
+          ],
+        },
+        {
+          id: "improvements",
+          title: "المحور الخامس: نقاط تحتاج للتحسين",
+          description:
+            "يحدد هذا المحور المجالات التي يحتاج الطالب إلى بذل جهد إضافي فيها لتطوير أدائه الأكاديمي والسلوكي",
+          options: [
+            "يحتاج إلى تحسين مهاراته في تنظيم وإدارة الوقت",
+            "يحتاج إلى تطوير ثقته بنفسه وجرأته في التعبير عن رأيه",
+            "يحتاج إلى تحسين خطه وتركيزه على دقة ووضوح الكتابة",
+            "يحتاج إلى بذل جهد أكبر في مراجعة ودقة حل المسائل/التدريبات",
+            "يحتاج إلى تحسين مهارات الاستماع والانتباه أثناء الشرح",
+            "يحتاج إلى تطوير مهارات العمل الجماعي والتعاون مع الآخرين",
+            "يحتاج إلى تحسين قدرته على التركيز وتجنب مصادر التشتيت",
+            "يحتاج إلى تحسين أسلوبه في المذاكرة وتبني استراتيجيات أكثر فعالية",
+            "يحتاج إلى الالتزام بالمواعيد النهائية لتسليم المهام والمشاريع",
+            "يحتاج إلى تحسين مهاراته في القراءة والفهم",
+          ],
+        },
+        /* {
+          id: "school_management",
+          title:
+            "تقييم إدارة المدرسة (للاستخدام من قبل الإدارة أو المرشد الطلابي)",
+          description:
+            "يُقيّم هذا المحور الجوانب المتعلقة بسلوك الطالب العام، وعلاقته بالمدرسة كمنظومة شاملة، ومدى استفادته من مواردها",
+          options: [
+            "الالتزام باللوائح المدرسية الشاملة: يلتزم تمامًا بأنظمة المدرسة خارج الفصل (الفناء، المقصف، المعامل)",
+            "المشاركة في الأنشطة المدرسية: يشارك بفاعلية في الأنشطة اللاصفية (الرياضية، الفنية، الثقافية، الاجتماعية",
+            "السلوك في الفعاليات المدرسية: يحافظ على السلوك الحسن خلال الحفلات والطابور والرحلات المدرسية",
+            "المواظبة على الحضور: منتظم في الحضور المدرسي، ونادرًا ما يتغيب إلا لأسباب قهرية",
+            "الاحترام العام: يحترم جميع كوادر المدرسة (الإدارة، العاملين، الزوار) ويتعامل معهم بأدب",
+            "المبادرة والإيجابية: يبدي مبادرات إيجابية لخدمة المدرسة أو المجتمع المدرسي (التطوع في لجان، اقتراح تحسينات)",
+            "الوعي والمسؤولية: يتحمل مسؤولية الحفاظ على الممتلكات العامة للمدرسة ويشعر بالانتماء لها",
+            "القدرة على حل النزاعات: يستخدم الحوار والوسائل السلمية لحل أي خلافات تنشأ مع الزملاء",
+            "الاستفادة من الدعم المدرسي: يتعاون مع المرشد الطلابي ويستفيد من برامج الدعم الأكاديمي أو السلوكي عند الحاجة",
+            "تمثيل المدرسة: يمثل المدرسة تمثيلاً مشرفًا في المناسبات أو المسابقات الخارجية (إن وجدت)",
+          ],
+        },
+        {
+          id: "final_recommendation",
+          title: "التوصية النهائية من إدارة المدرسة (بناءً على التقييم أعلاه)",
+          description: "",
+          options: [
+            "متميز: الأداء العام يتجاوز التوقعات بشكل لافت",
+            "مطابق للتوقعات: الأداء العام مقبول ومتوافق مع معايير المدرسة",
+            "بحاجة إلى متابعة: هناك بعض الجوانب التي تحتاج إلى تحسين وتدخل",
+            "بحاجة إلى خطة تحسين فردية: الأداء العام يتطلب تدخلاً مكثفاً ووضع خطة علاجية",
+          ],
+        },*/
+      ];
+
+      // Initialize default subjects
+      const defaultSubjects = [
+        {
+          name: "القرآن الكريم",
+          participation: 5,
+          homework: 10,
+          testScore: 5,
+          discipline: 5,
+          notes: [],
+        },
+        {
+          name: "الدراسات الإعلامية",
+          participation: "",
+          homework: "",
+          testScore: "",
+          discipline: "",
+          notes: [],
+        },
+        {
+          name: "اللغة العربية",
+          participation: "",
+          homework: "",
+          testScore: "",
+          discipline: "",
+          notes: [],
+        },
+        {
+          name: "العلوم",
+          participation: "",
+          homework: "",
+          testScore: "",
+          discipline: "",
+          notes: [],
+        },
+        {
+          name: "الرياضيات",
+          participation: "",
+          homework: "",
+          testScore: "",
+          discipline: "",
+          notes: [],
+        },
+        {
+          name: "التربية الفنية",
+          participation: "",
+          homework: "",
+          testScore: "",
+          discipline: "",
+          notes: [],
+        },
+        {
+          name: "التربية المدنية والدفاع عن النفس",
+          participation: "",
+          homework: "",
+          testScore: "",
+          discipline: "",
+          notes: [],
+        },
+        {
+          name: "المهارات الرئيسية",
+          participation: "",
+          homework: "",
+          testScore: "",
+          discipline: "",
+          notes: [],
+        },
+      ];
+
+      // Modal elements
+      const modal = document.getElementById("notesModal");
+      const closeBtn = document.querySelector(".close");
+      const saveNotesBtn = document.getElementById("saveNotes");
+      const cancelNotesBtn = document.getElementById("cancelNotes");
+      const axesContainer = document.getElementById("axesContainer");
+      const manageNotesBtn = document.getElementById("manageNotes");
+
+      // Load default subjects and notes
+      document.addEventListener("DOMContentLoaded", function () {
+        const subjectsContainer = document.getElementById("subjectsContainer");
+
+        defaultSubjects.forEach((subject, index) => {
+          addSubjectRow(
+            subject.name,
+            subject.participation,
+            subject.homework,
+            subject.testScore,
+            subject.discipline,
+            subject.notes
+          );
+        });
+
+        updatePreview();
+      });
+
+      // Add subject row
+      document
+        .getElementById("addSubject")
+        .addEventListener("click", function () {
+          addSubjectRow("", "", "", "", "", []);
+        });
+
+      function addSubjectRow(
+        name,
+        participation,
+        homework,
+        testScore,
+        discipline,
+        notes
+      ) {
+        const subjectsContainer = document.getElementById("subjectsContainer");
+
+        const subjectRow = document.createElement("div");
+        subjectRow.className = "subject-row";
+
+        // Create notes preview
+        let notesPreview = "";
+        if (notes && notes.length > 0) {
+          const selectedNotes = notes
+            .map((noteId) => {
+              const option = noteOptions.find((opt) => opt.id === noteId);
+              return option ? option.text : "";
+            })
+            .filter((text) => text !== "");
+
+          if (selectedNotes.length > 0) {
+            notesPreview = `
+              <div class="notes-preview">
+                <ul>
+                  ${selectedNotes.map((note) => `<li>${note}</li>`).join("")}
+                </ul>
+              </div>
+            `;
+          }
+        }
+
+        subjectRow.innerHTML = `
+                <input type="text" class="subject-name" placeholder="اسم المادة" value="${name}">
+                <input type="number" class="subject-score" placeholder="المشاركة" min="0" max="10" value="${participation}">
+                <input type="number" class="subject-score" placeholder="الواجبات" min="0" max="10" value="${homework}">
+                <input type="number" class="subject-score" placeholder="درجة الاختبار" min="0" max="100" value="${testScore}">
+                <input type="number" class="subject-score" placeholder="الانضباط" min="0" max="10" value="${discipline}">
+                <div class="subject-notes">
+                    <button type="button" class="open-notes-btn" data-notes='${JSON.stringify(
+                      notes
+                    )}'>اختيار الملاحظات</button>
+                    ${notesPreview}
+                </div>
+                <button class="remove-subject">حذف</button>
+            `;
+
+        subjectsContainer.appendChild(subjectRow);
+
+        // Add event listener to remove button
+        subjectRow
+          .querySelector(".remove-subject")
+          .addEventListener("click", function () {
+            subjectsContainer.removeChild(subjectRow);
+          });
+
+        // Add event listener to open notes button
+        subjectRow
+          .querySelector(".open-notes-btn")
+          .addEventListener("click", function () {
+            const currentNotes = JSON.parse(
+              this.getAttribute("data-notes") || "[]"
+            );
+            openNotesModal(this, currentNotes);
+          });
+      }
+
+      // Open notes modal for a specific subject
+      function openNotesModal(button, currentNotes) {
+        // Store reference to the button that opened the modal
+        modal.currentButton = button;
+        modal.currentNotes = [...currentNotes];
+
+        // Populate the modal with axes
+        axesContainer.innerHTML = "";
+
+        axesData.forEach((axis, index) => {
+          const axisSection = document.createElement("div");
+          axisSection.className = "axis-section";
+
+          let descriptionHTML = "";
+          if (axis.description) {
+            descriptionHTML = `<div class="axis-description">${axis.description}</div>`;
+          }
+
+          axisSection.innerHTML = `
+            <div class="axis-title">${axis.title}</div>
+            ${descriptionHTML}
+            <select class="axis-select" id="axis-${axis.id}">
+              <option value="">-- اختر ملاحظة --</option>
+              ${axis.options
+                .map((option) => `<option value="${option}">${option}</option>`)
+                .join("")}
+            </select>
+          `;
+
+          axesContainer.appendChild(axisSection);
+        });
+
+        // Show the modal
+        modal.style.display = "block";
+      }
+
+      // Save notes selection
+      saveNotesBtn.addEventListener("click", function () {
+        if (modal.currentButton) {
+          // Get selected notes from all axes
+          const selectedNotes = [];
+
+          axesData.forEach((axis) => {
+            const selectElement = document.getElementById(`axis-${axis.id}`);
+            if (selectElement && selectElement.value) {
+              selectedNotes.push(selectElement.value);
+            }
+          });
+
+          // Update the button data
+          modal.currentButton.setAttribute(
+            "data-notes",
+            JSON.stringify(selectedNotes)
+          );
+
+          // Update notes preview
+          const notesPreview =
+            modal.currentButton.parentElement.querySelector(".notes-preview");
+          if (selectedNotes.length > 0) {
+            if (notesPreview) {
+              notesPreview.innerHTML = `
+                <ul>
+                  ${selectedNotes.map((note) => `<li>${note}</li>`).join("")}
+                </ul>
+              `;
+            } else {
+              const newPreview = document.createElement("div");
+              newPreview.className = "notes-preview";
+              newPreview.innerHTML = `
+                <ul>
+                  ${selectedNotes.map((note) => `<li>${note}</li>`).join("")}
+                </ul>
+              `;
+              modal.currentButton.parentElement.appendChild(newPreview);
+            }
+          } else if (notesPreview) {
+            notesPreview.remove();
+          }
+
+          // Close the modal
+          modal.style.display = "none";
+        }
+      });
+
+      // Cancel notes selection
+      cancelNotesBtn.addEventListener("click", function () {
+        modal.style.display = "none";
+      });
+
+      // Close modal when clicking on X
+      closeBtn.addEventListener("click", function () {
+        modal.style.display = "none";
+      });
+
+      // Close modal when clicking outside of it
+      window.addEventListener("click", function (event) {
+        if (event.target === modal) {
+          modal.style.display = "none";
+        }
+      });
+
+      // Open notes management modal
+      manageNotesBtn.addEventListener("click", function () {
+        // Populate the modal with axes
+        axesContainer.innerHTML = "";
+
+        axesData.forEach((axis, index) => {
+          const axisSection = document.createElement("div");
+          axisSection.className = "axis-section";
+
+          let descriptionHTML = "";
+          if (axis.description) {
+            descriptionHTML = `<div class="axis-description">${axis.description}</div>`;
+          }
+
+          axisSection.innerHTML = `
+            <div class="axis-title">${axis.title}</div>
+            ${descriptionHTML}
+            <select class="axis-select" id="axis-${axis.id}">
+              <option value="">-- اختر ملاحظة --</option>
+              ${axis.options
+                .map((option) => `<option value="${option}">${option}</option>`)
+                .join("")}
+            </select>
+          `;
+
+          axesContainer.appendChild(axisSection);
+        });
+
+        // Show the modal without current button reference (management mode)
+        modal.currentButton = null;
+        modal.style.display = "block";
+      });
+
+      // Update preview
+      document
+        .getElementById("updatePreview")
+        .addEventListener("click", updatePreview);
+
+      function updatePreview() {
+        const preview = document.getElementById("pdfPreview");
+
+        // Get student info
+        const studentName =
+          document.getElementById("studentName").value || "«NAME»";
+        const studentClass =
+          document.getElementById("studentClass").value || "«SEA»-CLASS-";
+        const period =
+          document.getElementById("period").value ||
+          "الفترة من (1433/01/21) م/1433";
+
+        // Get subjects data
+        const subjectRows = document.querySelectorAll(".subject-row");
+        const subjects = [];
+
+        subjectRows.forEach((row) => {
+          const name = row.querySelector(".subject-name").value;
+          const participation = row.querySelector(
+            ".subject-score:nth-child(2)"
+          ).value;
+          const homework = row.querySelector(
+            ".subject-score:nth-child(3)"
+          ).value;
+          const testScore = row.querySelector(
+            ".subject-score:nth-child(4)"
+          ).value;
+          const discipline = row.querySelector(
+            ".subject-score:nth-child(5)"
+          ).value;
+
+          // Get selected notes
+          const notesButton = row.querySelector(".open-notes-btn");
+          const notes = notesButton
+            ? JSON.parse(notesButton.getAttribute("data-notes") || "[]")
+            : [];
+          const notesText = notes.join("<br>");
+
+          if (name) {
+            subjects.push({
+              name,
+              participation,
+              homework,
+              testScore,
+              discipline,
+              notes: notesText ? [notesText] : [],
+            });
+          }
+        });
+
+        // Get administrative data
+        const counselorNotes =
+          document.getElementById("counselorNotes").value || "......";
+        const adminNotes = document.getElementById("adminNotes").value || "";
+        const absenceDays = document.getElementById("absenceDays").value || "";
+        const lateDays = document.getElementById("lateDays").value || "";
+
+        // Generate preview HTML
+        let previewHTML = `
+                <div class="school-header">مدارس النصر الأهلية</div>
+                <div class="student-info">
+                    <p><strong>اسم الطالب:</strong> ${studentName}</p>
+                    <p><strong>الصف:</strong> ${studentClass}</p>
+                    <p><strong>${period}</strong></p>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>م</th>
+                            <th>المادة</th>
+                            <th>المشاركة</th>
+                            <th>الواجبات</th>
+                            <th>درجة الاختبار</th>
+                            <th>الانضباط</th>
+                            <th>ملاحظات المعلم</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+        subjects.forEach((subject, index) => {
+          const notesText =
+            subject.notes.length > 0 ? subject.notes.join("<br>") : "";
+          previewHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${subject.name}</td>
+                        <td>${subject.participation}</td>
+                        <td>${subject.homework}</td>
+                        <td>${subject.testScore}</td>
+                        <td>${subject.discipline}</td>
+                        <td style="text-align: right; font-size: 12px;">${notesText}</td>
+                    </tr>
+                `;
+        });
+
+        previewHTML += `
+                    </tbody>
+                </table>
+                
+                <div>
+                    <h3>المتابعة الإدارية</h3>
+                    <p><strong>ملاحظات الموجه الطلابي:</strong> ${counselorNotes}</p>
+                    <p><strong>ملاحظات الإدارة:</strong> ${adminNotes}</p>
+                    
+                    <table>
+                        <tr>
+                            <th>المواظبة</th>
+                            <th>عدد أيام الغياب</th>
+                            <th>عدد أيام التأخر</th>
+                        </tr>
+                        <tr>
+                            <td>${studentName}</td>
+                            <td>${absenceDays}</td>
+                            <td>${lateDays}</td>
+                        </tr>
+                    </table>
+                </div>
+            `;
+
+        preview.innerHTML = previewHTML;
+      }
+
+      // Generate PDF
+      document
+        .getElementById("generatePdf")
+        .addEventListener("click", function () {
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF("p", "mm", "a4");
+
+          // Get the preview element
+          const element = document.getElementById("pdfPreview");
+
+          // Use html2canvas to capture the preview
+          html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+          }).then((canvas) => {
+            const imgData = canvas.toDataURL("image/png");
+            const imgWidth = 210; // A4 width in mm
+            const pageHeight = 295; // A4 height in mm
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            let heightLeft = imgHeight;
+
+            let position = 0;
+
+            // Add first page
+            doc.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+
+            // Add additional pages if needed
+            while (heightLeft >= 0) {
+              position = heightLeft - imgHeight;
+              doc.addPage();
+              doc.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+              heightLeft -= pageHeight;
+            }
+
+            // Save the PDF
+            const studentName =
+              document.getElementById("studentName").value || "طالب";
+            doc.save(`تقرير_${studentName}.pdf`);
+          });
+        });
+    </script>
+  </body>
+</html>
